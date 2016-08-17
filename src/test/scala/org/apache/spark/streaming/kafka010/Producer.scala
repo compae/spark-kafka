@@ -24,7 +24,7 @@ trait Producer {
   val DefaultZookeeperConnection = "127.0.0.1:2181"
   val DefaultKafkaConnection = "127.0.0.1:9092"
   val mandatoryOptions: Map[String, Any] = Map(
-    "bootstrap.servers" -> "localhost:9092",
+    "bootstrap.servers" -> "127.0.0.1:9092",
     "acks" -> "all",
     "batch.size" -> 16384,
     "linger.ms" -> 1,

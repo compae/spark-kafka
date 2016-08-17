@@ -26,6 +26,7 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
   override val kafkaTopic = s"$DefaultKafkaTopic-${this.getClass().getName()}-${UUID.randomUUID().toString}"
 
   test("Kafka Receiver should read all the records") {
+
     val kafkaStream = KafkaUtils.createDirectStream[String, String](
       ssc,
       preferredHosts,
