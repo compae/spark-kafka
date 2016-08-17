@@ -2,4 +2,4 @@
 
 ## 0.1.0 (upcoming)
 
-* Load of events from Kafka 0.10 to Elasticsearch 2.0.2
+* Load events from Kafka 0.10.0.0 to Spark Streaming with Spark version 1.6.2
