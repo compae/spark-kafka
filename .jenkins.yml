@@ -4,8 +4,8 @@ ITSERVICES:
   - ZOOKEEPER:
       image: confluent/zookeeper:3.4.6-cp1
       env:
-          - zk_id: "1"
-      sleep: 10
+        - zk_id=1
+      sleep: 20
 
   - KAFKA:
       image: confluent/kafka:0.10.0.0-cp1

@@ -33,8 +33,14 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
       ConsumerStrategies.Subscribe[String, String](List(kafkaTopic), getSparkKafkaParams))
     val totalEvents = ssc.sparkContext.accumulator(0L, "Number of events received")
 
+    log.info(s"Starting Spark Streaming with options: \n $getSparkKafkaParams ...")
+
     // Start up the receiver.
     kafkaStream.start()
+
+    log.info(s"Spark Streaming started correctly")
+
+    log.info(s"Sending $totalRegisters messages to kafka ... ")
 
     //Send registers to Kafka
     val producer = getProducer(mandatoryOptions ++ Map("bootstrap.servers" -> kafkaHosts))
@@ -43,16 +49,18 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
     }
     close(producer)
 
+    log.info(s"Inserted $totalRegisters in kafka correctly")
+
     // Fires each time the configured window has passed.
     kafkaStream.foreachRDD(rdd => {
       if (!rdd.isEmpty()) {
         val count = rdd.count()
         // Do something with this message
-        println(s"EVENTS COUNT : \t $count")
+        log.info(s"EVENTS COUNT : \t $count")
         totalEvents += count
         //rdd.collect().sortBy(event => event.toInt).foreach(event => print(s"$event, "))
-      } else println("RDD is empty")
-      println(s"TOTAL EVENTS : \t $totalEvents")
+      } else log.info("RDD is empty")
+      log.info(s"TOTAL EVENTS : \t $totalEvents")
     })
 
     ssc.start() // Start the computation
