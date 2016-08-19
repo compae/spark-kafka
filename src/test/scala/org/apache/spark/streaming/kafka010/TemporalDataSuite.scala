@@ -23,16 +23,20 @@ import kafka.utils.ZkUtils
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkFunSuite}
-import org.scalatest.concurrent.Eventually
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.concurrent.Timeouts._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Exceptional, FunSuite, Outcome, Resources}
 
 import scala.collection.JavaConverters._
 import scala.util.{Random, Try}
+import org.scalatest.concurrent.{Eventually, TimeLimitedTests}
+import org.scalatest.exceptions.TimeoutField
+import org.scalatest.time.SpanSugar._
 
-private[kafka010] trait TemporalDataSuite extends SparkFunSuite
+private[kafka010] trait TemporalDataSuite extends FunSuite
   with BeforeAndAfter
   with BeforeAndAfterAll
   with Eventually
+  with TimeLimitedTests
   with Logging
   with Producer {
 
@@ -40,6 +44,8 @@ private[kafka010] trait TemporalDataSuite extends SparkFunSuite
 
   private lazy val config = ConfigFactory.load()
   val totalRegisters = 10000
+
+  val timeLimit = 3 minutes
 
   /**
    * Spark Properties

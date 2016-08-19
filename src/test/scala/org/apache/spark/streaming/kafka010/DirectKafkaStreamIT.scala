@@ -33,24 +33,6 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
       ConsumerStrategies.Subscribe[String, String](List(kafkaTopic), getSparkKafkaParams))
     val totalEvents = ssc.sparkContext.accumulator(0L, "Number of events received")
 
-    log.info(s"Starting Spark Streaming with options: \n $getSparkKafkaParams ...")
-
-    // Start up the receiver.
-    kafkaStream.start()
-
-    log.info(s"Spark Streaming started correctly")
-
-    log.info(s"Sending $totalRegisters messages to kafka ... ")
-
-    //Send registers to Kafka
-    val producer = getProducer(mandatoryOptions ++ Map("bootstrap.servers" -> kafkaHosts))
-    for (register <- 1 to totalRegisters) {
-      send(producer, kafkaTopic, register.toString)
-    }
-    close(producer)
-
-    log.info(s"Inserted $totalRegisters in kafka correctly")
-
     // Fires each time the configured window has passed.
     kafkaStream.foreachRDD(rdd => {
       if (!rdd.isEmpty()) {
@@ -63,8 +45,22 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
       log.info(s"TOTAL EVENTS : \t $totalEvents")
     })
 
-    ssc.start() // Start the computation
-    ssc.awaitTerminationOrTimeout(10000L) // Wait for the computation to terminate
+    log.info(s"Starting Spark Streaming with options: \n $getSparkKafkaParams ...")
+    // Start the computation
+    ssc.start()
+    log.info(s"Spark Streaming started correctly")
+
+    log.info(s"Sending $totalRegisters messages to kafka ... ")
+    //Send registers to Kafka
+    val producer = getProducer(mandatoryOptions ++ Map("bootstrap.servers" -> kafkaHosts))
+    for (register <- 1 to totalRegisters) {
+      send(producer, kafkaTopic, register.toString)
+    }
+    close(producer)
+    log.info(s"Inserted $totalRegisters in kafka correctly")
+
+    // Wait for the computation to terminate
+    ssc.awaitTerminationOrTimeout(10000L)
 
     assert(totalEvents.value === totalRegisters.toLong)
   }

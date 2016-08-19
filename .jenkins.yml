@@ -5,13 +5,13 @@ ITSERVICES:
       image: confluent/zookeeper:3.4.6-cp1
       env:
         - zk_id=1
-      sleep: 20
+      sleep: 30
 
   - KAFKA:
       image: confluent/kafka:0.10.0.0-cp1
       env:
         - KAFKA_ZOOKEEPER_CONNECT=%%ZOOKEEPER:2181
-        - KAFKA_ADVERTISED_HOST_NAME=127.0.0.1
+        - KAFKA_ADVERTISED_HOST_NAME=%%OWNHOSTNAME
 
 ITPARAMETERS: >
       -Dzookeeper.hosts=%%ZOOKEEPER:2181
