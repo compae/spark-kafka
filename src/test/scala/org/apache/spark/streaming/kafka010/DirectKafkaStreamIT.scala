@@ -26,36 +26,41 @@ private[spark] class DirectKafkaStreamIT extends TemporalDataSuite {
   override val kafkaTopic = s"$DefaultKafkaTopic-${this.getClass().getName()}-${UUID.randomUUID().toString}"
 
   test("Kafka Receiver should read all the records") {
+
     val kafkaStream = KafkaUtils.createDirectStream[String, String](
       ssc,
       preferredHosts,
       ConsumerStrategies.Subscribe[String, String](List(kafkaTopic), getSparkKafkaParams))
     val totalEvents = ssc.sparkContext.accumulator(0L, "Number of events received")
 
-    // Start up the receiver.
-    kafkaStream.start()
+    // Fires each time the configured window has passed.
+    kafkaStream.foreachRDD(rdd => {
+      if (!rdd.isEmpty()) {
+        val count = rdd.count()
+        // Do something with this message
+        log.info(s"EVENTS COUNT : \t $count")
+        totalEvents += count
+        //rdd.collect().sortBy(event => event.toInt).foreach(event => print(s"$event, "))
+      } else log.info("RDD is empty")
+      log.info(s"TOTAL EVENTS : \t $totalEvents")
+    })
 
+    log.info(s"Starting Spark Streaming with options: \n $getSparkKafkaParams ...")
+    // Start the computation
+    ssc.start()
+    log.info(s"Spark Streaming started correctly")
+
+    log.info(s"Sending $totalRegisters messages to kafka ... ")
     //Send registers to Kafka
     val producer = getProducer(mandatoryOptions ++ Map("bootstrap.servers" -> kafkaHosts))
     for (register <- 1 to totalRegisters) {
       send(producer, kafkaTopic, register.toString)
     }
     close(producer)
+    log.info(s"Inserted $totalRegisters in kafka correctly")
 
-    // Fires each time the configured window has passed.
-    kafkaStream.foreachRDD(rdd => {
-      if (!rdd.isEmpty()) {
-        val count = rdd.count()
-        // Do something with this message
-        println(s"EVENTS COUNT : \t $count")
-        totalEvents += count
-        //rdd.collect().sortBy(event => event.toInt).foreach(event => print(s"$event, "))
-      } else println("RDD is empty")
-      println(s"TOTAL EVENTS : \t $totalEvents")
-    })
-
-    ssc.start() // Start the computation
-    ssc.awaitTerminationOrTimeout(10000L) // Wait for the computation to terminate
+    // Wait for the computation to terminate
+    ssc.awaitTerminationOrTimeout(10000L)
 
     assert(totalEvents.value === totalRegisters.toLong)
   }

@@ -23,16 +23,20 @@ import kafka.utils.ZkUtils
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkFunSuite}
-import org.scalatest.concurrent.Eventually
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.concurrent.Timeouts._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Exceptional, FunSuite, Outcome, Resources}
 
 import scala.collection.JavaConverters._
 import scala.util.{Random, Try}
+import org.scalatest.concurrent.{Eventually, TimeLimitedTests}
+import org.scalatest.exceptions.TimeoutField
+import org.scalatest.time.SpanSugar._
 
-private[kafka010] trait TemporalDataSuite extends SparkFunSuite
+private[kafka010] trait TemporalDataSuite extends FunSuite
   with BeforeAndAfter
   with BeforeAndAfterAll
   with Eventually
+  with TimeLimitedTests
   with Logging
   with Producer {
 
@@ -40,6 +44,8 @@ private[kafka010] trait TemporalDataSuite extends SparkFunSuite
 
   private lazy val config = ConfigFactory.load()
   val totalRegisters = 10000
+
+  val timeLimit = 3 minutes
 
   /**
    * Spark Properties
@@ -59,11 +65,15 @@ private[kafka010] trait TemporalDataSuite extends SparkFunSuite
   private val zkSessionTimeout = 6000
   val zkUtils = ZkUtils(zkHosts, zkSessionTimeout, zkConnectionTimeout, false)
 
+  log.info(s"Zookeeper connection with hosts: $zkHosts")
+
   /**
    * Kafka Properties
    */
   val DefaultKafkaTopic = "topic-test"
   val kafkaHosts = Try(config.getString("kafka.hosts")).getOrElse(DefaultKafkaConnection)
+
+  log.info(s"Kafka connection with hosts: $kafkaHosts")
 
   /** Create a Kafka topic and wait until it is propagated to the whole cluster */
   def createTopic(topic: String, partitions: Int): Unit = {
@@ -95,13 +105,21 @@ private[kafka010] trait TemporalDataSuite extends SparkFunSuite
     sc = new SparkContext(conf)
     ssc = new StreamingContext(sc, Seconds(1))
 
+    log.info(s"Creating kafka topic: $kafkaTopic")
+
     createTopic(kafkaTopic, 1)
+
+    log.info(s"Kafka topic ($kafkaTopic) created correctly")
 
   }
 
   after {
 
+    log.info(s"Deleting kafka topic: $kafkaTopic")
+
     deleteTopic(kafkaTopic)
+
+    log.info(s"Kafka topic ($kafkaTopic) deleted correctly")
 
     if (ssc != null) {
       ssc.stop()
@@ -112,6 +130,8 @@ private[kafka010] trait TemporalDataSuite extends SparkFunSuite
       sc = null
     }
     System.gc()
+
+    log.info(s"Spark Contexts stopped correctly")
   }
 
   override def afterAll: Unit = {
