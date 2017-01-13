@@ -1,0 +1,37 @@
+@Library('libpipelines@master') _
+
+hose {
+    EMAIL = 'sparta'
+    MODULE = 'spark-kafka'
+    DEVTIMEOUT = 20
+    RELEASETIMEOUT = 20
+    FOSS = true
+    REPOSITORY = 'spark-kafka'
+
+    ITSERVICES = [
+        ['ZOOKEEPER': [
+          'image': 'stratio/zookeeper:3.4.6'
+        ],
+        'KAFKA': [
+          'image': 'stratio/kafka:0.8.2.1',
+          'env': ['ZOOKEEPER_HOSTS=%%ZOOKEEPER:2181']
+        ]],
+      ]
+      
+    ITPARAMETERS = """
+      |    -Dzookeeper.hosts=%%ZOOKEEPER:2181
+      |    -Dkafka.hosts=%%KAFKA:9092
+      | """
+      
+    DEV = { config ->
+            doCompile(config)
+            doIT(config)
+            doPackage(config)
+                        
+            parallel(QC: {
+                doStaticAnalysis(config)
+            }, DEPLOY: {
+                doDeploy(config)
+            }, failFast: config.FAILFAST)        
+    }
+}
