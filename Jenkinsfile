@@ -10,11 +10,11 @@ hose {
 
     ITSERVICES = [
         ['ZOOKEEPER': [
-          'image': 'stratio/zookeeper:3.4.6'
-        ],
-        'KAFKA': [
-          'image': 'stratio/kafka:0.8.2.1',
-          'env': ['ZOOKEEPER_HOSTS=%%ZOOKEEPER:2181']
+          'image': 'confluent/zookeeper:3.4.6-cp1']
+          ],
+        ['KAFKA': [
+          'image': 'confluent/kafka:0.10.0.0-cp1',
+          'env': ['KAFKA_ZOOKEEPER_CONNECT=%%ZOOKEEPER:2181', 'KAFKA_ADVERTISED_HOST_NAME=%%OWNHOSTNAME']
         ]],
       ]
       
